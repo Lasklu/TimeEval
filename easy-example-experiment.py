@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
-from timeeval import TimeEval, DatasetManager, DefaultMetrics, Algorithm, TrainingType, InputDimensionality
+from timeeval import TimeEval, DatasetManager, DefaultMetrics, Algorithm, TrainingType, InputDimensionality, AnalysisTask
 from timeeval.adapters import DockerAdapter, FunctionAdapter
 from timeeval.params import FixedParameters
 from timeeval.data_types import AlgorithmParameter
@@ -22,13 +22,15 @@ def main():
     algorithms = [
         Algorithm(
             name="COF",
-            main=DockerAdapter(image_name="registry.gitlab.hpi.de/akita/i/cof", skip_pull=True),
+            main=DockerAdapter(
+                image_name="registry.gitlab.hpi.de/akita/i/cof", skip_pull=True),
             param_config=FixedParameters({
                 "n_neighbors": 20,
                 "random_state": 42
             }),
             data_as_file=True,
             training_type=TrainingType.UNSUPERVISED,
+            analysis_task=AnalysisTask.ANOMALY_DETECTION,
             input_dimensionality=InputDimensionality("multivariate")
         ),
         Algorithm(
