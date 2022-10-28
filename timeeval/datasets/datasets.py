@@ -66,7 +66,8 @@ class Datasets(abc.ABC):
         df_temp.set_index(["collection_name", "dataset_name"], inplace=True)
         dataset_dir = filepath.parent
         if not dataset_dir.is_dir():
-            self._log.warning(f"Directory {dataset_dir} does not exist, creating it!")
+            self._log.warning(
+                f"Directory {dataset_dir} does not exist, creating it!")
             dataset_dir.mkdir(parents=True)
         df_temp.to_csv(filepath)
         return df_temp
@@ -202,9 +203,11 @@ class Datasets(abc.ABC):
             if max_contamination is not None:
                 selectors.append(df["contamination"] <= max_contamination)
             default_mask = np.full(len(df), True)
-            mask = reduce(lambda x, y: np.logical_and(x, y), selectors, default_mask)
+            mask = reduce(lambda x, y: np.logical_and(
+                x, y), selectors, default_mask)
             bench_datasets: List[Tuple[str, str]] = (
-                df[mask].loc[(slice(collection, collection), slice(dataset, dataset)), :]
+                df[mask].loc[(slice(collection, collection),
+                              slice(dataset, dataset)), :]
                 .index
                 .to_list())
 
@@ -298,7 +301,8 @@ class Datasets(abc.ABC):
         elif isinstance(collection_name, str) and dataset_name is not None:
             index = (collection_name, dataset_name)
         else:
-            raise ValueError(f"Cannot use {collection_name} and {dataset_name} as index!")
+            raise ValueError(
+                f"Cannot use {collection_name} and {dataset_name} as index!")
 
         if index[0] in self._custom_datasets.get_collection_names():
             return self._custom_datasets.get(index[1])
@@ -367,7 +371,8 @@ class Datasets(abc.ABC):
             else:
                 return pd.read_csv(path)
         else:
-            df = pd.read_csv(path, parse_dates=["timestamp"], infer_datetime_format=True)
+            df = pd.read_csv(path, parse_dates=[
+                             "timestamp"], infer_datetime_format=True)
             # timestamp parsing failed, hopefully because we have an integer-timestamp
             if df["timestamp"].dtype == np.dtype("O"):
                 try:
@@ -417,8 +422,10 @@ class Datasets(abc.ABC):
         if collection_name in self._custom_datasets.get_collection_names():
             return self._custom_datasets.get(dataset_name).training_type
         else:
-            train_is_normal = self._get_value_internal(dataset_id, "train_is_normal")
-            train_type_name = self._get_value_internal(dataset_id, "train_type")
+            train_is_normal = self._get_value_internal(
+                dataset_id, "train_is_normal")
+            train_type_name = self._get_value_internal(
+                dataset_id, "train_type")
             training_type = TrainingType.from_text(train_type_name)
             if training_type == TrainingType.SEMI_SUPERVISED and not train_is_normal:
                 self._log.warning(f"Dataset {dataset_id} is specified as {training_type} ('train_type'). However, "
@@ -456,18 +463,21 @@ class Datasets(abc.ABC):
         :class:`timeeval.datasets.DatasetMetadata`: Data class of the returned result.
         """
         path = self.get_dataset_path(dataset_id, train)
-        metadata_file = path.parent / f"{dataset_id[1]}.{self.METADATA_FILENAME_SUFFIX}"
+        metadata_file = path.parent / \
+            f"{dataset_id[1]}.{self.METADATA_FILENAME_SUFFIX}"
         if metadata_file.exists():
             try:
                 return DatasetAnalyzer.load_from_json(metadata_file, train)
             except ValueError:
-                self._log.debug(f"Metadata file existed, but the requested file info was not found, recreating it.")
+                self._log.debug(
+                    f"Metadata file existed, but the requested file info was not found, recreating it.")
         else:
             self._log.debug(
                 f"No metadata file for {dataset_id} exists. Analyzing dataset on-the-fly and storing result.")
         dm = DatasetAnalyzer(dataset_id, is_train=train, dataset_path=path)
         if dataset_id[0] in self._custom_datasets.get_collection_names():
-            self._log.warning("Cannot store metadata information for custom datasets!")
+            self._log.warning(
+                "Cannot store metadata information for custom datasets!")
         else:
             dm.save_to_json(metadata_file)
         return dm.metadata

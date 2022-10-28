@@ -27,14 +27,17 @@ class Times:
 
     @staticmethod
     def from_execute_algorithm(algorithm: Algorithm, X: AlgorithmParameter, args: dict) -> Tuple[np.ndarray, 'Times']:
-        x, pre_time = timer(algorithm.preprocess, X, args) if algorithm.preprocess else (X, np.nan)
+        x, pre_time = timer(algorithm.preprocess, X,
+                            args) if algorithm.preprocess else (X, np.nan)
         x, main_time = timer(algorithm.execute, x, args)
-        x, post_time = timer(algorithm.postprocess, x, args) if algorithm.postprocess else(x, np.nan)
+        x, post_time = timer(algorithm.postprocess, x,
+                             args) if algorithm.postprocess else(x, np.nan)
         return x, Times(ExecutionType.EXECUTE, main_time, preprocess=pre_time, postprocess=post_time)
 
     @staticmethod
     def from_train_algorithm(algorithm: Algorithm, X: AlgorithmParameter, args: dict) -> 'Times':
-        x, pre_time = timer(algorithm.preprocess, X, args) if algorithm.preprocess else (X, np.nan)
+        x, pre_time = timer(algorithm.preprocess, X,
+                            args) if algorithm.preprocess else (X, np.nan)
         x, main_time = timer(algorithm.train, x, args)
         return Times(ExecutionType.TRAIN, main_time, preprocess=pre_time)
 

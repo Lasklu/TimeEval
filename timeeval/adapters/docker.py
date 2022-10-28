@@ -72,7 +72,8 @@ class DockerAdapter(Adapter):
 
     @staticmethod
     def _get_uid() -> str:
-        uid = subprocess.run(["id", "-u"], capture_output=True, text=True).stdout.strip()
+        uid = subprocess.run(
+            ["id", "-u"], capture_output=True, text=True).stdout.strip()
         if uid == "0":  # if uid is root (0), we don't want to change it
             return ""
         else:
@@ -97,14 +98,16 @@ class DockerAdapter(Adapter):
     def _should_use_prelim_model(args: dict) -> bool:
         exec_type = args.get("executionType", "")
         constraints = args.get("resource_constraints", ResourceConstraints())
-        result: bool = (exec_type == ExecutionType.TRAIN or exec_type == ExecutionType.TRAIN.value) and constraints.use_preliminary_model_on_train_timeout
+        result: bool = (exec_type == ExecutionType.TRAIN or exec_type ==
+                        ExecutionType.TRAIN.value) and constraints.use_preliminary_model_on_train_timeout
         return result
 
     @staticmethod
     def _should_use_prelim_results(args: dict) -> bool:
         exec_type = args.get("executionType", "")
         constraints = args.get("resource_constraints", ResourceConstraints())
-        result: bool = (exec_type == ExecutionType.EXECUTE or exec_type == ExecutionType.EXECUTE.value) and constraints.use_preliminary_scores_on_execute_timeout
+        result: bool = (exec_type == ExecutionType.EXECUTE or exec_type ==
+                        ExecutionType.EXECUTE.value) and constraints.use_preliminary_scores_on_execute_timeout
         return result
 
     @staticmethod
@@ -116,13 +119,14 @@ class DockerAdapter(Adapter):
 
     def _run_container(self, dataset_path: Path, args: dict) -> Container:
         client = docker.from_env()
-
+        print(dataset_path)
         algorithm_interface = AlgorithmInterface(
             dataInput=(DATASET_TARGET_PATH / dataset_path.name).resolve(),
             dataOutput=(RESULTS_TARGET_PATH / SCORES_FILE_NAME).resolve(),
             modelInput=(RESULTS_TARGET_PATH / MODEL_FILE_NAME).resolve(),
             modelOutput=(RESULTS_TARGET_PATH / MODEL_FILE_NAME).resolve(),
-            executionType=args.get("executionType", ExecutionType.EXECUTE.value),
+            executionType=args.get(
+                "executionType", ExecutionType.EXECUTE.value),
             customParameters=args.get("hyper_params", {}),
         )
 
@@ -130,11 +134,13 @@ class DockerAdapter(Adapter):
         gid = DockerAdapter._get_gid(self.group)
         if not gid:
             gid = uid
-        print(f"Running container '{self.image_name}:{self.tag}' with uid={uid} and gid={gid} privileges in {algorithm_interface.executionType} mode.")
+        print(
+            f"Running container '{self.image_name}:{self.tag}' with uid={uid} and gid={gid} privileges in {algorithm_interface.executionType} mode.")
 
         memory_limit, cpu_limit = self._get_compute_limits(args)
         cpu_shares = int(cpu_limit * 1e9)
-        print(f"Restricting container to {cpu_limit} CPUs and {memory_limit / GB:.3f} GB RAM")
+        print(
+            f"Restricting container to {cpu_limit} CPUs and {memory_limit / GB:.3f} GB RAM")
 
         return client.containers.run(
             f"{self.image_name}:{self.tag}",
@@ -172,7 +178,8 @@ class DockerAdapter(Adapter):
                         print(f"Container timeout after {timeout} and "
                               f"'ResourceConstraints.preliminary_results_on_timeout' is set to True. However, the "
                               f"algorithm did not store a preliminary result; raising DockerTimeoutError anyway!")
-                        raise DockerTimeoutError(f"{self.image_name} could not create results after {timeout}") from e
+                        raise DockerTimeoutError(
+                            f"{self.image_name} could not create results after {timeout}") from e
                 elif self._should_use_prelim_model(args):
                     # check if model was stored
                     target_path = args.get("results_path", Path("./results"))
@@ -184,10 +191,13 @@ class DockerAdapter(Adapter):
                         print(f"Container timeout after {timeout} and 'ResourceConstraints.use_preliminary_model_on_train_timeout' is "
                               "set to True. However, the algorithm did not store a model; "
                               "raising DockerTimeoutError anyway!")
-                        raise DockerTimeoutError(f"{self.image_name} could not build a model within {timeout}") from e
+                        raise DockerTimeoutError(
+                            f"{self.image_name} could not build a model within {timeout}") from e
                 else:
-                    print(f"Container timeout after {timeout}, raising DockerTimeoutError!")
-                    raise DockerTimeoutError(f"{self.image_name} timed out after {timeout}") from e
+                    print(
+                        f"Container timeout after {timeout}, raising DockerTimeoutError!")
+                    raise DockerTimeoutError(
+                        f"{self.image_name} timed out after {timeout}") from e
             else:
                 print(f"Waiting for container failed with error: {e}")
                 raise e
@@ -198,11 +208,15 @@ class DockerAdapter(Adapter):
             container.stop()
 
         if result["StatusCode"] != 0:
-            print(f"Docker algorithm failed with status code '{result['StatusCode']}', consider container logs below.")
-            raise DockerAlgorithmFailedError(f"Please consider log files in {self._results_path(args, absolute=True)}!")
+            print(
+                f"Docker algorithm failed with status code '{result['StatusCode']}', consider container logs below.")
+            raise DockerAlgorithmFailedError(
+                f"Please consider log files in {self._results_path(args, absolute=True)}!")
 
     def _read_results(self, args: dict) -> np.ndarray:
-        results: np.ndarray = np.genfromtxt(self._results_path(args, absolute=True) / SCORES_FILE_NAME, delimiter=",")
+        print("args", args)
+        results: np.ndarray = np.genfromtxt(self._results_path(
+            args, absolute=True) / SCORES_FILE_NAME, delimiter=",")
         return results
 
     # Adapter overwrites
@@ -225,7 +239,8 @@ class DockerAdapter(Adapter):
             tag: str = self.tag
 
             def prepare() -> None:
-                client = docker.from_env(timeout=Duration("5 minutes").to_seconds())
+                client = docker.from_env(
+                    timeout=Duration("5 minutes").to_seconds())
                 client.images.pull(image, tag=tag)
 
             return prepare
@@ -234,9 +249,11 @@ class DockerAdapter(Adapter):
 
     def get_finalize_fn(self) -> Optional[Callable[[], None]]:
         def finalize() -> None:
-            client = docker.from_env(timeout=Duration("10 minutes").to_seconds())
+            client = docker.from_env(
+                timeout=Duration("10 minutes").to_seconds())
             try:
-                containers = client.containers.list(all=True, filters={"ancestor": self.image_name})
+                containers = client.containers.list(
+                    all=True, filters={"ancestor": self.image_name})
                 for c in containers:
                     # force removal and also remove associated volumes
                     c.remove(force=True, v=True)
