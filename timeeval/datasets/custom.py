@@ -59,7 +59,7 @@ class CustomDatasets(CustomDatasetsBase):
         store = {}
         for dataset in config:
             self._validate_dataset(dataset, config[dataset])
-            store[dataset] = self._analyze_dataset(dataset, config[dataset])
+            # store[dataset] = self._analyze_dataset(dataset, config[dataset]) #wieder auskommentieren!
 
         self._dataset_store: Dict[str, CDEntry] = store
 
@@ -71,11 +71,14 @@ class CustomDatasets(CustomDatasetsBase):
 
     def _validate_dataset(self, name: str, ds_obj: dict) -> None:
         if TEST_PATH_KEY not in ds_obj:
-            raise ValueError(f"The dataset {name} misses the required '{TEST_PATH_KEY}' property.")
+            raise ValueError(
+                f"The dataset {name} misses the required '{TEST_PATH_KEY}' property.")
         elif not self._extract_path(ds_obj, TEST_PATH_KEY).exists():
-            raise ValueError(f"The test file for dataset {name} was not found (property '{TEST_PATH_KEY}')!")
+            raise ValueError(
+                f"The test file for dataset {name} was not found (property '{TEST_PATH_KEY}')!")
         if TRAIN_PATH_KEY in ds_obj and not self._extract_path(ds_obj, TRAIN_PATH_KEY).exists():
-            raise ValueError(f"The train file for dataset {name} was not found (property '{TRAIN_PATH_KEY}')!")
+            raise ValueError(
+                f"The train file for dataset {name} was not found (property '{TRAIN_PATH_KEY}')!")
 
     def _analyze_dataset(self, name: str, ds_obj: dict) -> CDEntry:
         dataset_id = _dataset_id(name)
@@ -91,7 +94,8 @@ class CustomDatasets(CustomDatasetsBase):
         training_type = _training_type(train_path)
 
         # analyze test time series
-        dm = DatasetAnalyzer(dataset_id, is_train=False, dataset_path=test_path)
+        dm = DatasetAnalyzer(dataset_id, is_train=False,
+                             dataset_path=test_path)
 
         return CDEntry(test_path, train_path, Dataset(
             datasetId=dataset_id,
@@ -119,7 +123,8 @@ class CustomDatasets(CustomDatasetsBase):
         if train:
             train_path = dataset.train_path
             if train_path is None:
-                raise ValueError(f"Custom dataset {dataset_name} is unsupervised and has no training time series!")
+                raise ValueError(
+                    f"Custom dataset {dataset_name} is unsupervised and has no training time series!")
             else:
                 return train_path
 
@@ -149,20 +154,26 @@ class CustomDatasets(CustomDatasetsBase):
             # if dataset is not None:
             #     selectors.append(lambda meta: meta.datasetId[1] == dataset)
             if dataset_type is not None:
-                selectors.append(lambda meta: meta.dataset_type == dataset_type)
+                selectors.append(
+                    lambda meta: meta.dataset_type == dataset_type)
             if datetime_index is not None:
                 warnings.warn("Filter for index type (datetime or int) is not supported for custom dataset! "
                               "Ignoring it!")
             if training_type is not None:
-                selectors.append(lambda meta: meta.training_type == training_type)
+                selectors.append(
+                    lambda meta: meta.training_type == training_type)
             if input_dimensionality is not None:
-                selectors.append(lambda meta: meta.input_dimensionality == input_dimensionality)
+                selectors.append(
+                    lambda meta: meta.input_dimensionality == input_dimensionality)
             if min_anomalies is not None:
-                selectors.append(lambda meta: meta.num_anomalies >= min_anomalies)
+                selectors.append(
+                    lambda meta: meta.num_anomalies >= min_anomalies)
             if max_anomalies is not None:
-                selectors.append(lambda meta: meta.num_anomalies <= max_anomalies)
+                selectors.append(
+                    lambda meta: meta.num_anomalies <= max_anomalies)
             if max_contamination is not None:
-                selectors.append(lambda meta: meta.contamination <= max_contamination)
+                selectors.append(
+                    lambda meta: meta.contamination <= max_contamination)
 
             custom_datasets = []
             for d in self._dataset_store:

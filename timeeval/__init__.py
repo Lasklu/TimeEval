@@ -20,7 +20,7 @@ Use the built-in ``help`` function to view a function's or class' docstring::
 
 from ._version import __version__
 from .algorithm import Algorithm
-from .data_types import AlgorithmParameter, TrainingType, InputDimensionality
+from .data_types import AlgorithmParameter, TrainingType, InputDimensionality, AnalysisTask
 from .datasets import Datasets, DatasetManager, MultiDatasetManager
 from .metrics import Metric, DefaultMetrics
 from .remote_configuration import RemoteConfiguration

@@ -3,7 +3,7 @@ from typing import Optional, Callable, Dict, Any
 
 from timeeval.adapters.base import Adapter
 from timeeval.data_types import (
-    TSFunction, TSFunctionPost, ExecutionType, AlgorithmParameter, TrainingType, InputDimensionality
+    AnalysisTask, TSFunction, TSFunctionPost, ExecutionType, AlgorithmParameter, TrainingType, InputDimensionality
 )
 from timeeval.params import ParameterConfig
 
@@ -70,6 +70,7 @@ class Algorithm:
     param_schema: Dict[str, Dict[str, Any]] = field(default_factory=lambda: {})
     param_config: ParameterConfig = ParameterConfig.defaults()
     training_type: TrainingType = TrainingType.UNSUPERVISED
+    analysis_task: AnalysisTask = AnalysisTask.ANOMALY_DETECTION
     input_dimensionality: InputDimensionality = InputDimensionality.UNIVARIATE
 
     def train(self, dataset: AlgorithmParameter, args: Optional[dict] = None) -> AlgorithmParameter:

@@ -10,6 +10,7 @@ def extract_labels(df: pd.DataFrame) -> np.ndarray:
 
 
 def extract_features(df: pd.DataFrame) -> np.ndarray:
+    # assumption that first line is timestamp
     features: np.ndarray = df.values[:, 1:-1]
     return features
 
@@ -19,5 +20,6 @@ def load_dataset(path: Path) -> pd.DataFrame:
 
 
 def load_labels_only(path: Path) -> np.ndarray:
-    labels: np.ndarray = pd.read_csv(path, usecols=["is_anomaly"])["is_anomaly"].values.astype(np.float64)
+    labels: np.ndarray = pd.read_csv(path, usecols=["is_anomaly"])[
+        "is_anomaly"].values.astype(np.float64)
     return labels

@@ -38,14 +38,16 @@ class Metric(abc.ABC):
     >>>                     metrics=[FPR(threshold=0.8), DefaultMetrics.ROC_AUC])
     """
 
-    def __call__(self, y_true: np.ndarray, y_score: np.ndarray, **kwargs) -> float:  # type: ignore[no-untyped-def]
-        y_true, y_score = self._validate_scores(y_true, y_score, **kwargs)
+    # type: ignore[no-untyped-def]
+    def __call__(self, y_true: np.ndarray, y_score: np.ndarray, **kwargs) -> float:
+        #y_true, y_score = self._validate_scores(y_true, y_score, **kwargs)
         if np.unique(y_score).shape[0] == 1:
-            warnings.warn("Cannot compute metric for a constant value in y_score, returning 0.0!")
+            warnings.warn(
+                "Cannot compute metric for a constant value in y_score, returning 0.0!")
             return 0.
         return self.score(y_true, y_score)
 
-    def _validate_scores(self, y_true: np.ndarray, y_score: np.ndarray,
+    def _validate_scores(self, y_true: np.ndarray, y_score: np.ndarray,  # function needs to be adopted!!!
                          inf_is_1: bool = True,
                          neginf_is_0: bool = True,
                          nan_is_0: bool = True) -> Tuple[np.ndarray, np.ndarray]:
@@ -71,7 +73,8 @@ class Metric(abc.ABC):
                                  "the values {0, 1}. Please consider applying a threshold to the scores!")
         else:
             if y_score.dtype != np.float_:
-                raise ValueError("When using continuous scoring metrics, the scores must be floats!")
+                raise ValueError(
+                    "When using continuous scoring metrics, the scores must be floats!")
 
         # substitute NaNs and Infs
         nan_mask = np.isnan(y_score)
@@ -90,7 +93,8 @@ class Metric(abc.ABC):
             y_score[nan_mask] = 0.
         else:
             penalize_mask = penalize_mask | nan_mask
-        y_score[penalize_mask] = (~np.array(y_true[penalize_mask], dtype=bool)).astype(np.int_)
+        y_score[penalize_mask] = (
+            ~np.array(y_true[penalize_mask], dtype=bool)).astype(np.int_)
 
         assert_all_finite(y_score)
         return y_true, y_score

@@ -7,15 +7,18 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
+from timeeval.metrics.classification_metrics import ClassificationMetric
+
 from ..algorithm import Algorithm
 from ..constants import EXECUTION_LOG, ANOMALY_SCORES_TS, METRICS_CSV, HYPER_PARAMETERS
 from ..core.times import Times
-from ..data_types import AlgorithmParameter, TrainingType, InputDimensionality
+from ..data_types import AlgorithmParameter, AnalysisTask, TrainingType, InputDimensionality
 from ..datasets import Datasets, Dataset
 from ..heuristics import inject_heuristic_values
 from ..metrics import Metric, DefaultMetrics
 from ..resource_constraints import ResourceConstraints
 from ..utils.datasets import extract_features, load_dataset, load_labels_only
+from ..utils.DatasetUtility import AnomalyDetectionDatasetUtility, ClassificationDatasetUtility, BaseDatasetUtility
 from ..utils.encode_params import dump_params
 from ..utils.hash_dict import hash_dict
 from ..utils.results_path import generate_experiment_path
@@ -91,12 +94,16 @@ class Experiment:
 
         # perform execution
         y_scores, execution_times = self._perform_execution()
+        print(y_scores)
         result.update(execution_times)
         # backup results to disk
-        pd.DataFrame([result]).to_csv(self.results_path / METRICS_CSV, index=False)
+        pd.DataFrame([result]).to_csv(
+            self.results_path / METRICS_CSV, index=False)
 
-        y_true = load_labels_only(self.resolved_test_dataset_path)
-        y_true, y_scores = self.scale_scores(y_true, y_scores)
+        y_true = self._get_dataset_utility().load_labels_only(
+            self.resolved_test_dataset_path)
+        if self.algorithm.analysis_task == "anomaly_detection":
+            y_true, y_scores = self.scale_scores(y_true, y_scores)
         # persist scores to disk
         y_scores.tofile(str(self.results_path / ANOMALY_SCORES_TS), sep="\n")
 
@@ -110,19 +117,24 @@ class Experiment:
             for metric in self.metrics:
                 print(f"Calculating {metric}", file=logs_file)
                 try:
+                    # if isinstance(metric, ClassificationMetric) & self.algorithm.analysis_task != "classification":
+                    #    raise ValueError(
+                    #        f"Metric {metric} is not applicable to algorithm {self.algorithm.name}")
                     score = metric(y_true, y_scores)
                     result[metric.name] = score
                     print(f"  = {score}", file=logs_file)
                     logs_file.flush()
                 except Exception as e:
-                    print(f"Exception while computing metric {metric}: {e}", file=logs_file)
+                    print(
+                        f"Exception while computing metric {metric}: {e}", file=logs_file)
                     errors += 1
                     if str(e):
                         last_exception = e
                     continue
 
         # write all results to disk (overwriting backup)
-        pd.DataFrame([result]).to_csv(self.results_path / METRICS_CSV, index=False)
+        pd.DataFrame([result]).to_csv(
+            self.results_path / METRICS_CSV, index=False)
 
         # rethrow exception if no metric could be calculated
         if errors == len(self.metrics) and last_exception is not None:
@@ -133,35 +145,49 @@ class Experiment:
     def _perform_training(self) -> dict:
         if self.algorithm.training_type == TrainingType.UNSUPERVISED:
             return {}
+        datasetUtility = self._get_dataset_utility()
 
         if not self.resolved_train_dataset_path:
-            raise ValueError(f"No training dataset was provided. Algorithm cannot be trained!")
+            raise ValueError(
+                f"No training dataset was provided. Algorithm cannot be trained!")
 
         if self.algorithm.data_as_file:
             X: AlgorithmParameter = self.resolved_train_dataset_path
         else:
-            X = load_dataset(self.resolved_train_dataset_path).values
+            X = datasetUtility.load_dataset(
+                self.resolved_train_dataset_path).values
 
         with (self.results_path / EXECUTION_LOG).open("a") as logs_file, redirect_stdout(logs_file):
-            print(f"Performing training for {self.algorithm.training_type.name} algorithm {self.algorithm.name}")
-            times = Times.from_train_algorithm(self.algorithm, X, self.build_args())
+            print(
+                f"Performing training for {self.algorithm.training_type.name} algorithm {self.algorithm.name}")
+            times = Times.from_train_algorithm(
+                self.algorithm, X, self.build_args())
         return times.to_dict()
 
     def _perform_execution(self) -> Tuple[np.ndarray, dict]:
+        datasetUtility = self._get_dataset_utility()
         if self.algorithm.data_as_file:
             X: AlgorithmParameter = self.resolved_test_dataset_path
         else:
-            dataset = load_dataset(self.resolved_test_dataset_path)
+            dataset = datasetUtility.load_dataset(
+                self.resolved_test_dataset_path)
             if dataset.shape[1] >= 3:
+                print("Dataset has shape larger than 3, extracting features")
                 X = extract_features(dataset)
             else:
                 raise ValueError(
                     f"Dataset '{self.resolved_test_dataset_path.name}' has a shape that was not expected: {dataset.shape}")
 
         with (self.results_path / EXECUTION_LOG).open("a") as logs_file, redirect_stdout(logs_file):
-            print(f"Performing execution for {self.algorithm.training_type.name} algorithm {self.algorithm.name}")
-            y_scores, times = Times.from_execute_algorithm(self.algorithm, X, self.build_args())
+            print(
+                f"Performing execution for {self.algorithm.training_type.name} algorithm {self.algorithm.name}")
+            y_scores, times = Times.from_execute_algorithm(
+                self.algorithm, X, self.build_args())
+        print("y_scores", y_scores)
         return y_scores, times.to_dict()
+
+    def _get_dataset_utility(self) -> BaseDatasetUtility:
+        return ClassificationDatasetUtility() if self.algorithm.analysis_task == AnalysisTask.CLASSIFICATION else AnomalyDetectionDatasetUtility()
 
 
 class Experiments:
@@ -187,7 +213,8 @@ class Experiments:
         self.skip_invalid_combinations = skip_invalid_combinations or force_training_type_match or force_dimensionality_match
         self.force_training_type_match = force_training_type_match
         self.force_dimensionality_match = force_dimensionality_match
-        self.experiment_combinations: Optional[pd.DataFrame] = pd.read_csv(experiment_combinations_file) if experiment_combinations_file else None
+        self.experiment_combinations: Optional[pd.DataFrame] = pd.read_csv(
+            experiment_combinations_file) if experiment_combinations_file else None
         if self.skip_invalid_combinations:
             self._N: Optional[int] = None
         else:
@@ -197,23 +224,25 @@ class Experiments:
 
     def _should_be_run(self, algorithm: Algorithm, dataset: Dataset, params_id: str) -> bool:
         return self.experiment_combinations is None or \
-                not self.experiment_combinations[
-                    (self.experiment_combinations.algorithm == algorithm.name) &
-                    (self.experiment_combinations.collection == dataset.datasetId[0]) &
-                    (self.experiment_combinations.dataset == dataset.datasetId[1]) &
-                    (self.experiment_combinations.hyper_params_id == params_id)
-                ].empty
+            not self.experiment_combinations[
+                (self.experiment_combinations.algorithm == algorithm.name) &
+                (self.experiment_combinations.collection == dataset.datasetId[0]) &
+                (self.experiment_combinations.dataset == dataset.datasetId[1]) &
+                (self.experiment_combinations.hyper_params_id == params_id)
+            ].empty
 
     def __iter__(self) -> Generator[Experiment, None, None]:
         for algorithm in self.algorithms:
             for algorithm_config in algorithm.param_config:
                 for dataset in self.datasets:
                     if self._check_compatible(dataset, algorithm):
-                        test_path, train_path = self._resolve_dataset_paths(dataset, algorithm)
+                        test_path, train_path = self._resolve_dataset_paths(
+                            dataset, algorithm)
                         # create parameter hash before executing heuristics
                         # (they replace the parameter values, but we want to be able to group by original configuration)
                         params_id = hash_dict(algorithm_config)
-                        params = inject_heuristic_values(algorithm_config, algorithm, dataset, test_path)
+                        params = inject_heuristic_values(
+                            algorithm_config, algorithm, dataset, test_path)
                         if self._should_be_run(algorithm, dataset, params_id):
                             for repetition in range(1, self.repetitions + 1):
                                 yield Experiment(
@@ -232,7 +261,8 @@ class Experiments:
     def __len__(self) -> int:
         if self._N is None:
             self._N = sum([
-                int(self._should_be_run(algorithm, dataset, hash_dict(algorithm_config)))
+                int(self._should_be_run(algorithm,
+                    dataset, hash_dict(algorithm_config)))
                 for algorithm in self.algorithms
                 for algorithm_config in algorithm.param_config
                 for dataset in self.datasets
@@ -242,11 +272,13 @@ class Experiments:
         return self._N  # type: ignore
 
     def _resolve_dataset_paths(self, dataset: Dataset, algorithm: Algorithm) -> Tuple[Path, Optional[Path]]:
-        test_dataset_path = self.dmgr.get_dataset_path(dataset.datasetId, train=False)
+        test_dataset_path = self.dmgr.get_dataset_path(
+            dataset.datasetId, train=False)
         train_dataset_path: Optional[Path] = None
         if algorithm.training_type != TrainingType.UNSUPERVISED:
             try:
-                train_dataset_path = self.dmgr.get_dataset_path(dataset.datasetId, train=True)
+                train_dataset_path = self.dmgr.get_dataset_path(
+                    dataset.datasetId, train=True)
             except KeyError:
                 pass
         return test_dataset_path, train_dataset_path
@@ -272,5 +304,6 @@ class Experiments:
               m  |  u   | 1
               m  |  m   | 1
             """
-            dim_compatible = not (algorithm.input_dimensionality == InputDimensionality.UNIVARIATE and dataset.input_dimensionality == InputDimensionality.MULTIVARIATE)
+            dim_compatible = not (algorithm.input_dimensionality ==
+                                  InputDimensionality.UNIVARIATE and dataset.input_dimensionality == InputDimensionality.MULTIVARIATE)
         return dim_compatible and train_compatible

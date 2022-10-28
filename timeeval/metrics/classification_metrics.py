@@ -19,7 +19,9 @@ class ClassificationMetric(Metric, abc.ABC):
         self._thresholding_strategy = thresholding_strategy
 
     def score(self, y_true: np.ndarray, y_score: np.ndarray) -> float:
-        y_pred = self._thresholding_strategy.fit_transform(y_true, y_score)
+        y_pred = y_score
+        if self._thresholding_strategy is not None:
+            y_pred = self._thresholding_strategy.fit_transform(y_true, y_score)
         return self._internal_score(y_true, y_pred)
 
     def supports_continuous_scorings(self) -> bool:
@@ -43,11 +45,12 @@ class Precision(ClassificationMetric):
     --------
     sklearn.metrics.precision_score : Implementation of the precision metric.
     """
+
     def __init__(self, thresholding_strategy: ThresholdingStrategy):
         super().__init__(thresholding_strategy)
 
     def _internal_score(self, y_true: np.ndarray, y_pred: np.ndarray) -> float:
-        return precision_score(y_true, y_pred)  # type: ignore
+        return precision_score(y_true, y_pred, average='micro')  # type: ignore
 
     @property
     def name(self) -> str:
@@ -66,11 +69,12 @@ class Recall(ClassificationMetric):
     --------
     sklearn.metrics.recall_score : Implementation of the recall metric.
     """
+
     def __init__(self, thresholding_strategy: ThresholdingStrategy):
         super().__init__(thresholding_strategy)
 
     def _internal_score(self, y_true: np.ndarray, y_pred: np.ndarray) -> float:
-        return recall_score(y_true, y_pred)  # type: ignore
+        return recall_score(y_true, y_pred, average='micro')  # type: ignore
 
     @property
     def name(self) -> str:
@@ -89,11 +93,12 @@ class F1Score(ClassificationMetric):
     --------
     sklearn.metrics.f1_score : Implementation of the F1 metric.
     """
+
     def __init__(self, thresholding_strategy: ThresholdingStrategy):
         super().__init__(thresholding_strategy)
 
     def _internal_score(self, y_true: np.ndarray, y_pred: np.ndarray) -> float:
-        return f1_score(y_true, y_pred)  # type: ignore
+        return f1_score(y_true, y_pred, average='micro')  # type: ignore
 
     @property
     def name(self) -> str:
