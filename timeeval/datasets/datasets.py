@@ -13,7 +13,7 @@ from .custom_base import CustomDatasetsBase
 from .custom_noop import NoOpCustomDatasets
 from .dataset import Dataset
 from .metadata import DatasetId, DatasetMetadata
-from ..data_types import TrainingType, InputDimensionality
+from ..data_types import AnalysisTask, TrainingType, InputDimensionality
 
 
 class Datasets(abc.ABC):
@@ -60,7 +60,7 @@ class Datasets(abc.ABC):
     def _create_index_file(self, filepath: Path) -> pd.DataFrame:
         df_temp = pd.DataFrame(
             columns=["dataset_name", "collection_name", "train_path", "test_path", "dataset_type", "datetime_index",
-                     "split_at", "train_type", "train_is_normal", "input_type", "length", "dimensions", "contamination",
+                     "split_at", "train_type", "algorithm_type", "train_is_normal", "input_type", "length", "dimensions", "contamination",
                      "num_anomalies", "min_anomaly_length", "median_anomaly_length", "max_anomaly_length", "mean",
                      "stddev", "trend", "stationarity", "period_size"])
         df_temp.set_index(["collection_name", "dataset_name"], inplace=True)
@@ -94,6 +94,7 @@ class Datasets(abc.ABC):
                 "train_path": [safe_extract_path(name, train=True) for name in datasets],
                 "dataset_type": [self._custom_datasets.get(name).dataset_type for name in datasets],
                 "train_type": [self._custom_datasets.get(name).training_type.value for name in datasets],
+                "algorithm_type": [self._custom_datasets.get(name).algorithm_type.value for name in datasets],
                 "input_type": [self._custom_datasets.get(name).input_dimensionality.value for name in datasets],
                 "length": [self._custom_datasets.get(name).length for name in datasets],
                 "dimensions": [self._custom_datasets.get(name).dimensions for name in datasets],
@@ -127,6 +128,7 @@ class Datasets(abc.ABC):
                dataset_type: Optional[str] = None,
                datetime_index: Optional[bool] = None,
                training_type: Optional[TrainingType] = None,
+               algorithm_type: Optional[AnalysisTask] = None,
                train_is_normal: Optional[bool] = None,
                input_dimensionality: Optional[InputDimensionality] = None,
                min_anomalies: Optional[int] = None,
@@ -190,6 +192,9 @@ class Datasets(abc.ABC):
                 # translate to internal representation (strings)
                 train_type: str = training_type.value
                 selectors.append(df["train_type"] == train_type)
+            if algorithm_type is not None:
+                algorithm_type: str = algorithm_type.value
+                selectors.append(df["algorithm_type"] == algorithm_type)
             if train_is_normal is not None:
                 selectors.append(df["train_is_normal"] == train_is_normal)
             if input_dimensionality is not None:
@@ -314,10 +319,13 @@ class Datasets(abc.ABC):
                 period = entry["period_size"]
             except KeyError:
                 pass
-            return Dataset(
+
+            dataset = Dataset.get_class(entry["algorithm_type"])
+            return dataset(
                 datasetId=index,
                 dataset_type=entry["dataset_type"],
                 training_type=training_type,
+                algorithm_type=entry["algorithm_type"],
                 length=entry["length"],
                 dimensions=entry["dimensions"],
                 contamination=entry["contamination"],

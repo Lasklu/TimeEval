@@ -5,7 +5,7 @@ from enum import Enum
 from functools import reduce
 from json import JSONEncoder
 from typing import Tuple, List, Optional, Dict, Any
-
+from timeeval import AnalysisTask
 import numpy as np
 
 
@@ -62,6 +62,7 @@ class DatasetMetadata:
     is_train: bool
     length: int
     dimensions: int
+    algorithm_type: AnalysisTask
     contamination: float
     num_anomalies: int
     anomaly_length: AnomalyLength
@@ -129,7 +130,8 @@ class DatasetMetadata:
 
     @staticmethod
     def from_json(s: str) -> 'DatasetMetadata':
-        meta: DatasetMetadata = json.loads(s, object_hook=DatasetMetadataEncoder.object_hook)
+        meta: DatasetMetadata = json.loads(
+            s, object_hook=DatasetMetadataEncoder.object_hook)
         return meta
 
 
@@ -159,7 +161,8 @@ class DatasetMetadataEncoder(JSONEncoder):
             )
             trends = deepcopy(dct["trends"])
             for k, obj in trends.items():
-                trends[k] = [Trend(TrendType[t["tpe"].upper()], t["coef"], t["confidence_r2"]) for t in obj]
+                trends[k] = [Trend(TrendType[t["tpe"].upper()],
+                                   t["coef"], t["confidence_r2"]) for t in obj]
             stationarities_dict = deepcopy(dct["stationarities"])
             for k, v in stationarities_dict.items():
                 stationarities_dict[k] = Stationarity[v.upper()]

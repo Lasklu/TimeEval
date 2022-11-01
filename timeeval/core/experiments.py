@@ -6,6 +6,7 @@ from typing import Tuple, List, Generator, Optional
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+from timeeval.datasets.dataset import ClassificationDataset
 
 from timeeval.metrics.classification_metrics import ClassificationMetric
 
@@ -17,8 +18,6 @@ from ..datasets import Datasets, Dataset
 from ..heuristics import inject_heuristic_values
 from ..metrics import Metric, DefaultMetrics
 from ..resource_constraints import ResourceConstraints
-from ..utils.datasets import extract_features, load_dataset, load_labels_only
-from ..utils.DatasetUtility import AnomalyDetectionDatasetUtility, ClassificationDatasetUtility, BaseDatasetUtility
 from ..utils.encode_params import dump_params
 from ..utils.hash_dict import hash_dict
 from ..utils.results_path import generate_experiment_path
@@ -100,7 +99,7 @@ class Experiment:
         pd.DataFrame([result]).to_csv(
             self.results_path / METRICS_CSV, index=False)
 
-        y_true = self._get_dataset_utility().load_labels_only(
+        y_true = self.dataset.get_labels(
             self.resolved_test_dataset_path)
         if self.algorithm.analysis_task == "anomaly_detection":
             y_true, y_scores = self.scale_scores(y_true, y_scores)
@@ -145,8 +144,6 @@ class Experiment:
     def _perform_training(self) -> dict:
         if self.algorithm.training_type == TrainingType.UNSUPERVISED:
             return {}
-        datasetUtility = self._get_dataset_utility()
-
         if not self.resolved_train_dataset_path:
             raise ValueError(
                 f"No training dataset was provided. Algorithm cannot be trained!")
@@ -154,7 +151,7 @@ class Experiment:
         if self.algorithm.data_as_file:
             X: AlgorithmParameter = self.resolved_train_dataset_path
         else:
-            X = datasetUtility.load_dataset(
+            X = self.dataset.get_dataset(
                 self.resolved_train_dataset_path).values
 
         with (self.results_path / EXECUTION_LOG).open("a") as logs_file, redirect_stdout(logs_file):
@@ -165,15 +162,17 @@ class Experiment:
         return times.to_dict()
 
     def _perform_execution(self) -> Tuple[np.ndarray, dict]:
-        datasetUtility = self._get_dataset_utility()
         if self.algorithm.data_as_file:
             X: AlgorithmParameter = self.resolved_test_dataset_path
         else:
-            dataset = datasetUtility.load_dataset(
+            if isinstance(dataset, ClassificationDataset):
+                raise ValueError(
+                    "ClassificationDatasets can only be used when providing data as file.")
+            dataset = self.dataset.get_dataset(
                 self.resolved_test_dataset_path)
             if dataset.shape[1] >= 3:
                 print("Dataset has shape larger than 3, extracting features")
-                X = extract_features(dataset)
+                X = self.dataset.extract_features(dataset)
             else:
                 raise ValueError(
                     f"Dataset '{self.resolved_test_dataset_path.name}' has a shape that was not expected: {dataset.shape}")
@@ -185,9 +184,6 @@ class Experiment:
                 self.algorithm, X, self.build_args())
         print("y_scores", y_scores)
         return y_scores, times.to_dict()
-
-    def _get_dataset_utility(self) -> BaseDatasetUtility:
-        return ClassificationDatasetUtility() if self.algorithm.analysis_task == AnalysisTask.CLASSIFICATION else AnomalyDetectionDatasetUtility()
 
 
 class Experiments:

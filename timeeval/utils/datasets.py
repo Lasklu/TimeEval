@@ -3,16 +3,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-
-def extract_labels(df: pd.DataFrame) -> np.ndarray:
-    labels: np.ndarray = df.values[:, -1].astype(np.float64)
-    return labels
-
-
-def extract_features(df: pd.DataFrame) -> np.ndarray:
-    # assumption that first line is timestamp
-    features: np.ndarray = df.values[:, 1:-1]
-    return features
+# Todo replace references by dataset class
 
 
 def load_dataset(path: Path) -> pd.DataFrame:

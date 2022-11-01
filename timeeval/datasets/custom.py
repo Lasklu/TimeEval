@@ -8,9 +8,9 @@ import pandas as pd
 
 from .analyzer import DatasetAnalyzer
 from .custom_base import CustomDatasetsBase
-from .dataset import Dataset
+from .dataset import AnomalyDetectionDataset, ClassificationDataset, Dataset
 from .metadata import DatasetId
-from ..data_types import TrainingType, InputDimensionality
+from ..data_types import AnalysisTask, TrainingType, InputDimensionality
 
 
 TRAIN_PATH_KEY = "train_path"
@@ -41,6 +41,7 @@ def _training_type(train_path: Optional[Path]) -> TrainingType:
 
 
 class CustomDatasets(CustomDatasetsBase):
+    # THIS DOES NOT WORK ANYMORE. NEEDS MORE SOPHISTICATED IMPLEMENTATION
     """Implementation of the custom datasets API.
 
     Internal API! You should **not need to use or modify** this class.
@@ -59,7 +60,7 @@ class CustomDatasets(CustomDatasetsBase):
         store = {}
         for dataset in config:
             self._validate_dataset(dataset, config[dataset])
-            # store[dataset] = self._analyze_dataset(dataset, config[dataset]) #wieder auskommentieren!
+            # store[dataset] = self._analyze_dataset(dataset, config[dataset]) #todo wieder auskommentieren!
 
         self._dataset_store: Dict[str, CDEntry] = store
 
@@ -96,11 +97,13 @@ class CustomDatasets(CustomDatasetsBase):
         # analyze test time series
         dm = DatasetAnalyzer(dataset_id, is_train=False,
                              dataset_path=test_path)
+        dataset = Dataset.get_class(dm.metadata.algorithm_type)
 
-        return CDEntry(test_path, train_path, Dataset(
+        return CDEntry(test_path, train_path, dataset(
             datasetId=dataset_id,
             dataset_type=dataset_type,
             training_type=training_type,
+            algorithm_type=dm.metadata.algorithm_type,
             dimensions=dm.metadata.dimensions,
             length=dm.metadata.length,
             contamination=dm.metadata.contamination,
@@ -139,6 +142,7 @@ class CustomDatasets(CustomDatasetsBase):
                dataset_type: Optional[str] = None,
                datetime_index: Optional[bool] = None,
                training_type: Optional[TrainingType] = None,
+               algorithm_type: Optional[AnalysisTask] = None,
                train_is_normal: Optional[bool] = None,
                input_dimensionality: Optional[InputDimensionality] = None,
                min_anomalies: Optional[int] = None,
@@ -162,6 +166,9 @@ class CustomDatasets(CustomDatasetsBase):
             if training_type is not None:
                 selectors.append(
                     lambda meta: meta.training_type == training_type)
+            if algorithm_type is not None:
+                selectors.append(
+                    lambda meta: meta.algorithm_type == algorithm_type)
             if input_dimensionality is not None:
                 selectors.append(
                     lambda meta: meta.input_dimensionality == input_dimensionality)

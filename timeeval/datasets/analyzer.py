@@ -12,6 +12,7 @@ from statsmodels.tsa.stattools import adfuller, kpss
 
 from .metadata import DatasetId, DatasetMetadata, AnomalyLength, Stationarity, Trend, TrendType, DatasetMetadataEncoder
 from ..utils import datasets as datasets_utils
+from timeeval import AnalysisTask
 
 
 class DatasetAnalyzer:
@@ -62,13 +63,15 @@ class DatasetAnalyzer:
     """
 
     def __init__(self, dataset_id: DatasetId, is_train: bool,
+                 algorithm_type: AnalysisTask,
                  df: Optional[pd.DataFrame] = None,
                  dataset_path: Optional[Path] = None,
                  dmgr: Optional['Datasets'] = None,  # type: ignore
                  ignore_stationarity: bool = False,
                  ignore_trend: bool = False) -> None:
         if df is None and not dataset_path and dmgr is None:
-            raise ValueError("Either df, dataset_path, or dmgr must be supplied!")
+            raise ValueError(
+                "Either df, dataset_path, or dmgr must be supplied!")
         if df is None and dmgr:
             df = dmgr.get_dataset_df(dataset_id, train=is_train)
         elif df is None and dataset_path:
@@ -77,6 +80,7 @@ class DatasetAnalyzer:
         self._df: pd.DataFrame = df
         self.dataset_id: DatasetId = dataset_id
         self.is_train: bool = is_train
+        self.algorithm_type: AnalysisTask = algorithm_type
         self._log_prefix = f"[{self.dataset_id} ({'train' if self.is_train else 'test'})]"
         self._find_base_metadata()
         if ignore_stationarity:
@@ -98,6 +102,7 @@ class DatasetAnalyzer:
             dataset_id=self.dataset_id,
             is_train=self.is_train,
             length=self.length,
+            algorithm_type=self.algorithm_type,
             dimensions=self.dimensions,
             contamination=self.contamination,
             means=self.means,
@@ -131,7 +136,8 @@ class DatasetAnalyzer:
                 self.log.warning(f"{self._log_prefix} {fp} already exists, but 'overwrite' was specified! "
                                  f"Ignoring existing contents.")
             else:
-                self.log.info(f"{self._log_prefix} {fp} already exists. Reading contents and appending new metadata.")
+                self.log.info(
+                    f"{self._log_prefix} {fp} already exists. Reading contents and appending new metadata.")
                 with open(fp, "r") as f:
                     existing_metadata = json.load(f)
                 if not isinstance(existing_metadata, List) or len(existing_metadata) == 0:
@@ -140,10 +146,12 @@ class DatasetAnalyzer:
                     shutil.move(fp.as_posix(), fp.parent / f"{fp.name}.bak")
                 else:
                     metadata = existing_metadata
-        self.log.debug(f"{self._log_prefix} Writing detailed metadata to file {filename}")
+        self.log.debug(
+            f"{self._log_prefix} Writing detailed metadata to file {filename}")
         metadata.append(self.metadata)
         with open(filename, "w") as f:
-            json.dump(metadata, f, indent=2, sort_keys=True, cls=DatasetMetadataEncoder)
+            json.dump(metadata, f, indent=2, sort_keys=True,
+                      cls=DatasetMetadataEncoder)
             f.write("\n")
 
     @staticmethod
@@ -167,16 +175,19 @@ class DatasetAnalyzer:
             Metadata of the training or testing time series.
         """
         with open(filename, "r") as f:
-            metadata_list: List[DatasetMetadata] = json.load(f, object_hook=DatasetMetadataEncoder.object_hook)
+            metadata_list: List[DatasetMetadata] = json.load(
+                f, object_hook=DatasetMetadataEncoder.object_hook)
             for metadata in metadata_list:
                 if metadata.is_train == train:
                     return metadata
-            raise ValueError(f"No metadata for {'training' if train else 'testing'} dataset in file {filename} found!")
+            raise ValueError(
+                f"No metadata for {'training' if train else 'testing'} dataset in file {filename} found!")
 
     def _find_base_metadata(self) -> None:
         self.length = len(self._df)
         self.dimensions = len(self._df.columns) - 2
-        self.contamination = len(self._df[self._df["is_anomaly"] == 1]) / self.length
+        self.contamination = len(
+            self._df[self._df["is_anomaly"] == 1]) / self.length
 
         means = self._df.iloc[:, 1:-1].mean(axis=0)
         stddevs = self._df.iloc[:, 1:-1].std(axis=0)
@@ -199,17 +210,21 @@ class DatasetAnalyzer:
     def _adf_stationarity_test(self, series: pd.Series, sigma: float = 0.05) -> bool:
         try:
             adftest = adfuller(series, autolag="AIC")
-            adf_output = pd.Series(adftest[0:3], index=['Test Statistic', 'p-value', 'Lags Used'])
-            self.log.debug(f"{self._log_prefix} Results of Augmented Dickey Fuller (ADF) test:\n{adf_output}")
+            adf_output = pd.Series(adftest[0:3], index=[
+                                   'Test Statistic', 'p-value', 'Lags Used'])
+            self.log.debug(
+                f"{self._log_prefix} Results of Augmented Dickey Fuller (ADF) test:\n{adf_output}")
             return bool(adf_output["p-value"] < sigma)
         except Exception as e:
-            self.log.error(f"{self._log_prefix} ADF stationarity test for {series.name} encountered an error: {e}")
+            self.log.error(
+                f"{self._log_prefix} ADF stationarity test for {series.name} encountered an error: {e}")
             return False
 
     def _kpss_trend_stationarity_test(self, series: pd.Series, sigma: float = 0.05) -> bool:
         try:
             kpsstest = kpss(series, regression="c", nlags="auto")
-            kpss_output = pd.Series(kpsstest[0:3], index=['Test Statistic', 'p-value', 'Lags Used'])
+            kpss_output = pd.Series(kpsstest[0:3], index=[
+                                    'Test Statistic', 'p-value', 'Lags Used'])
             self.log.debug(f"{self._log_prefix} Results of Kwiatkowski-Phillips-Schmidt-Shin (KPSS) test:\n"
                            f"{kpss_output}")
             return bool(kpss_output["p-value"] < sigma)
@@ -231,9 +246,11 @@ class DatasetAnalyzer:
         elif not stationary and trend_stationary:
             stationarity = Stationarity.TREND_STATIONARY  # detrending to make stationary
         else:  # if stationary and not trend_stationary:
-            stationarity = Stationarity.DIFFERENCE_STATIONARY  # differencing to make stationary
+            # differencing to make stationary
+            stationarity = Stationarity.DIFFERENCE_STATIONARY
 
-        self.log.debug(f"{self._log_prefix} Stationarity of series '{series.name}': {stationarity}")
+        self.log.debug(
+            f"{self._log_prefix} Stationarity of series '{series.name}': {stationarity}")
         return stationarity
 
     def _find_stationarity(self) -> None:
@@ -243,7 +260,8 @@ class DatasetAnalyzer:
         """
         df = self._df
         # Circumvent missing "timestamp" header:
-        df.columns = ["timestamp" if "Unnamed" in c else c for c in df.columns]
+        df.columns = [
+            "timestamp" if "Unnamed" in c else c for c in df.columns]  # bug
         df = df.set_index("timestamp").iloc[:, :-1]
         self.stationarity = {}
         for _, series in df.items():
@@ -270,4 +288,5 @@ class DatasetAnalyzer:
 
         self.trends = {}
         for _, series in self._df.iloc[:, 1:-1].items():
-            self.trends[series.name] = [t for order in (1, 2, 3) for t in get_trend(series, order=order)]
+            self.trends[series.name] = [t for order in (
+                1, 2, 3) for t in get_trend(series, order=order)]

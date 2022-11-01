@@ -16,6 +16,7 @@ class DatasetRecord(NamedTuple):
     train_path: Optional[str]
     test_path: str
     dataset_type: str
+    algorithm_type: str
     datetime_index: bool
     split_at: int
     train_type: str
@@ -97,24 +98,27 @@ class DatasetManager(ContextManager['DatasetManager'], Datasets):
         """Re-read the benchmark dataset collection information from the `datasets.csv` file."""
         return pd.read_csv(self._filepath, index_col=["collection_name", "dataset_name"]).sort_index()
 
-    ### begin overwrites
+    # begin overwrites
     @property
     def _log(self) -> logging.Logger:
         return self._log_
 
     def refresh(self, force: bool = False) -> None:
         if not force and self._dirty:
-            raise Exception("There are unsaved changes in memory that would get lost by reading from disk again!")
+            raise Exception(
+                "There are unsaved changes in memory that would get lost by reading from disk again!")
         else:
             self._df = self._load_df()
 
     def _get_dataset_path_internal(self, dataset_id: DatasetId, train: bool = False) -> Path:
-        path = self._get_value_internal(dataset_id, "train_path" if train else "test_path")
+        path = self._get_value_internal(
+            dataset_id, "train_path" if train else "test_path")
         if not path or (isinstance(path, (np.float64, np.int64, float)) and np.isnan(path)):
-            raise KeyError(f"Path to {'training' if train else 'testing'} dataset {dataset_id} not found!")
+            raise KeyError(
+                f"Path to {'training' if train else 'testing'} dataset {dataset_id} not found!")
         resolved_path: Path = self._filepath.parent.resolve() / path
         return resolved_path
-    ### end overwrites
+    # end overwrites
 
     def add_dataset(self, dataset: DatasetRecord) -> None:
         """Adds a new dataset to the benchmark dataset collection (in-memory).
@@ -134,6 +138,7 @@ class DatasetManager(ContextManager['DatasetManager'], Datasets):
             "test_path": dataset.test_path,
             "dataset_type": dataset.dataset_type,
             "datetime_index": dataset.datetime_index,
+            "algorithm_type": dataset.algorithm_type,
             "split_at": dataset.split_at,
             "train_type": dataset.train_type,
             "train_is_normal": dataset.train_is_normal,
