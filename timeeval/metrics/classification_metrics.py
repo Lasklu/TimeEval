@@ -50,7 +50,8 @@ class Precision(ClassificationMetric):
         super().__init__(thresholding_strategy)
 
     def _internal_score(self, y_true: np.ndarray, y_pred: np.ndarray) -> float:
-        return precision_score(y_true, y_pred, average='micro')  # type: ignore
+        # type: ignore
+        return precision_score(y_true, y_pred, average='weighted')
 
     @property
     def name(self) -> str:
@@ -74,7 +75,7 @@ class Recall(ClassificationMetric):
         super().__init__(thresholding_strategy)
 
     def _internal_score(self, y_true: np.ndarray, y_pred: np.ndarray) -> float:
-        return recall_score(y_true, y_pred, average='micro')  # type: ignore
+        return recall_score(y_true, y_pred, average='weighted')  # type: ignore
 
     @property
     def name(self) -> str:
@@ -98,7 +99,7 @@ class F1Score(ClassificationMetric):
         super().__init__(thresholding_strategy)
 
     def _internal_score(self, y_true: np.ndarray, y_pred: np.ndarray) -> float:
-        return f1_score(y_true, y_pred, average='micro')  # type: ignore
+        return f1_score(y_true, y_pred, average='weighted')  # type: ignore
 
     @property
     def name(self) -> str:
