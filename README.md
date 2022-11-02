@@ -135,6 +135,17 @@ timeeval.run()
 print(timeeval.get_results())
 ```
 
+## Classification Example
+
+```shell
+cd TimeEval-algorithms/0-base-images
+docker build -t registry.gitlab.hpi.de/akita/i/python3-base:0.2.5 -t registry.gitlab.hpi.de/akita/i/python3-base:latest ./python3-base
+docker build -t registry.gitlab.hpi.de/akita/i/pyod:0.2.5 -t registry.gitlab.hpi.de/akita/i/pyod:latest ./pyod
+docker build -t registry.gitlab.hpi.de/akita/i/rocket ./rocket
+```
+
+Then run ```easy-classification-example.py```
+
 ## Citation
 
 If you use TimeEval in your project or research, please cite our demonstration paper:
