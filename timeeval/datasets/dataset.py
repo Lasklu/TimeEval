@@ -6,7 +6,7 @@ import numpy as np
 from pathlib import Path
 from sktime.datasets import load_from_tsfile, load_from_tsfile_to_dataframe
 
-from ..data_types import AnalysisTask, TrainingType, InputDimensionality
+from ..data_types import AlgorithmType, TrainingType, InputDimensionality
 from .metadata import DatasetId
 
 
@@ -19,7 +19,7 @@ class Dataset:
     datasetId: DatasetId
     dataset_type: str
     training_type: TrainingType
-    algorithm_type: AnalysisTask
+    algorithm_type: AlgorithmType
     length: int
     dimensions: int
     contamination: float

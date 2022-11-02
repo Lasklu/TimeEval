@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
-from pathlib import Path
-
-from timeeval import TimeEval, DatasetManager, DefaultMetrics, Algorithm, TrainingType, InputDimensionality, AnalysisTask
-from timeeval.adapters import DockerAdapter, FunctionAdapter
-from timeeval.metrics.classification_metrics import ClassificationMetric, F1Score, Precision, Recall
-from timeeval.metrics.thresholding import NoThresholding
+from timeeval import TimeEval, DatasetManager, Algorithm, TrainingType, InputDimensionality, AlgorithmType
+from timeeval.adapters import DockerAdapter
+from timeeval.metrics.classification_metrics import F1Score, Precision, Recall
 from timeeval.params import FixedParameters
-from timeeval.data_types import AlgorithmParameter
-import numpy as np
 
 dm = DatasetManager(
     "./timeeval_experiments/classification/")
@@ -24,7 +19,7 @@ algorithms = [
         }),
         data_as_file=True,
         training_type=TrainingType.SUPERVISED,
-        analysis_task=AnalysisTask.CLASSIFICATION,
+        algorithm_type=AlgorithmType.CLASSIFICATION,
         input_dimensionality=InputDimensionality("multivariate")
     )]
 timeeval = TimeEval(dm, datasets, algorithms,

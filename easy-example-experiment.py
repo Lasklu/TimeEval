@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
-from timeeval import TimeEval, DatasetManager, DefaultMetrics, Algorithm, TrainingType, InputDimensionality, AnalysisTask
+from timeeval import TimeEval, DatasetManager, DefaultMetrics, Algorithm, TrainingType, InputDimensionality, AlgorithmType
 from timeeval.adapters import DockerAdapter, FunctionAdapter
 from timeeval.params import FixedParameters
 from timeeval.data_types import AlgorithmParameter
@@ -30,7 +30,7 @@ def main():
             }),
             data_as_file=True,
             training_type=TrainingType.UNSUPERVISED,
-            analysis_task=AnalysisTask.ANOMALY_DETECTION,
+            algorithm_type=AlgorithmType.ANOMALY_DETECTION,
             input_dimensionality=InputDimensionality("multivariate")
         ),
         Algorithm(
@@ -45,7 +45,7 @@ def main():
 
     timeeval.run()
     results = timeeval.get_results(aggregated=False)
-    print(results)
+    #print(results)
 
 
 if __name__ == "__main__":

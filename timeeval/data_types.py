@@ -5,8 +5,8 @@ from typing import Union, Callable
 import numpy as np
 
 
-class AnalysisTask(Enum):
-    """Analysis task of the algorithm
+class AlgorithmType(Enum):
+    """AlgorithmType of the algorithm
 
     TimeEval distinguishes between time series classification, anomaly detection and anomaly classification.
     """
@@ -15,13 +15,13 @@ class AnalysisTask(Enum):
     ANOMALY_CLASSIFICATION = "anomaly_classification"
 
     @staticmethod
-    def from_text(name: str) -> 'AnalysisTask':
+    def from_text(name: str) -> 'AlgorithmType':
         """Returns the corresponding enum value for the given name
 
         :param name: Name of the enum value
         :return: Corresponding enum value
         """
-        return AnalysisTask[name.upper().replace("-", "_")]
+        return AlgorithmType[name.upper().replace("-", "_")]
 
 
 class TrainingType(Enum):

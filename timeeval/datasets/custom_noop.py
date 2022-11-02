@@ -4,7 +4,7 @@ from typing import List, Optional
 from .custom_base import CustomDatasetsBase
 from .dataset import Dataset
 from .metadata import DatasetId
-from ..data_types import AnalysisTask, TrainingType, InputDimensionality
+from ..data_types import AlgorithmType, TrainingType, InputDimensionality
 
 
 class NoOpCustomDatasets(CustomDatasetsBase):
@@ -37,7 +37,7 @@ class NoOpCustomDatasets(CustomDatasetsBase):
                dataset_type: Optional[str] = None,
                datetime_index: Optional[bool] = None,
                training_type: Optional[TrainingType] = None,
-               algorithm_type: Optional[AnalysisTask] = None,
+               algorithm_type: Optional[AlgorithmType] = None,
                train_is_normal: Optional[bool] = None,
                input_dimensionality: Optional[InputDimensionality] = None,
                min_anomalies: Optional[int] = None,
