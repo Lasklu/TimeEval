@@ -10,7 +10,7 @@ from timeeval.data_types import AlgorithmParameter
 import numpy as np
 
 dm = DatasetManager(
-    "/Users/lukaslaskowski/Documents/HPI/9.Semester/Masterprojekt/src/TimeEval/timeeval_experiments/classification/")
+    "./timeeval_experiments/classification/")
 datasets = dm.select()
 
 algorithms = [
