@@ -223,21 +223,24 @@ class TimeEval:
         assert repetitions > 0, "Negative or 0 repetitions are not supported!"
         assert n_jobs >= -1, f"n_jobs={n_jobs} not supported (must be >= -1)!"
         if experiment_combinations_file is not None:
-            assert experiment_combinations_file.exists(), "Experiment combination file not found!"
+            assert experiment_combinations_file.exists(
+            ), "Experiment combination file not found!"
 
         dataset_details = []
         not_found_datasets = []
         for d in datasets:
             try:
                 dataset_details.append(dataset_mgr.get(d))
-            except KeyError:
+            except KeyError as k:
+                print("h", k)
                 not_found_datasets.append(repr(d))
         assert len(not_found_datasets) == 0, "Some datasets could not be found in DatasetManager!\n  " \
                                              f"{', '.join(not_found_datasets)}"
 
         limits = resource_constraints or ResourceConstraints.default_constraints()
         if limits != ResourceConstraints.default_constraints():
-            incompatible_algos = [a.name for a in algorithms if not isinstance(a.main, DockerAdapter)]
+            incompatible_algos = [
+                a.name for a in algorithms if not isinstance(a.main, DockerAdapter)]
             assert len(incompatible_algos) == 0, "The following algorithms won't satisfy the specified resource " \
                                                  f"constraints: {', '.join(incompatible_algos)}. Either drop the " \
                                                  "resource constraints or use the DockerAdapter for all algorithms!"
@@ -248,11 +251,13 @@ class TimeEval:
         self.disable_progress_bar = disable_progress_bar
         self.metrics: List[Metric] = metrics or DefaultMetrics.default_list()
         self.metric_names = [m.name for m in self.metrics]
-        self.results = pd.DataFrame(columns=TimeEval.RESULT_KEYS + self.metric_names)
+        self.results = pd.DataFrame(
+            columns=TimeEval.RESULT_KEYS + self.metric_names)
         self.distributed = distributed
         self.n_jobs = n_jobs
 
-        self.log.info(f"Results are recorded in the directory {self.results_path}")
+        self.log.info(
+            f"Results are recorded in the directory {self.results_path}")
         self.results_path.mkdir(parents=True, exist_ok=True)
 
         if not distributed and limits.tasks_per_host > 1:
@@ -275,16 +280,19 @@ class TimeEval:
 
         self.remote_config: RemoteConfiguration = remote_config or RemoteConfiguration()
         self.remote_config.update_logging_path(self.results_path)
-        self.log.debug(f"Updated dask logging filepath to {self.remote_config.dask_logging_filename}")
+        self.log.debug(
+            f"Updated dask logging filepath to {self.remote_config.dask_logging_filename}")
 
         if self.distributed:
-            self.log.info("TimeEval is running in distributed environment, setting up remoting ...")
+            self.log.info(
+                "TimeEval is running in distributed environment, setting up remoting ...")
             self.remote = Remote(disable_progress_bar=self.disable_progress_bar, remote_config=self.remote_config,
                                  resource_constraints=limits)
             self.results["future_result"] = np.nan
 
             self.log.info("... registering signal handlers ...")
-            orig_handler: Callable[[int, Optional[FrameType]], Any] = signal.getsignal(signal.SIGINT)  # type: ignore
+            orig_handler: Callable[[int, Optional[FrameType]], Any] = signal.getsignal(
+                signal.SIGINT)  # type: ignore
 
             def sigint_handler(sig: int, frame: Optional[FrameType] = None) -> Any:
                 self.log.warning(f"SIGINT ({sig}) received, shutting down cluster. Please look for dangling Docker "
@@ -321,19 +329,25 @@ class TimeEval:
                                      f"to algorithm input dimensionality ({exp.algorithm.input_dimensionality})!")
 
                 if self.distributed:
-                    future_result = self.remote.add_task(exp.evaluate, key=exp.name)
+                    future_result = self.remote.add_task(
+                        exp.evaluate, key=exp.name)
                 else:
                     result = exp.evaluate()
-                self._record_results(exp, result=result, future_result=future_result)
+                self._record_results(exp, result=result,
+                                     future_result=future_result)
 
             except DockerTimeoutError as e:
-                self.log.exception(f"Evaluation of {exp.algorithm.name} on the dataset {exp.dataset} timed out.")
+                self.log.exception(
+                    f"Evaluation of {exp.algorithm.name} on the dataset {exp.dataset} timed out.")
                 result = {m: np.nan for m in self.metric_names}
-                self._record_results(exp, result=result, status=Status.TIMEOUT, error_message=repr(e))
+                self._record_results(
+                    exp, result=result, status=Status.TIMEOUT, error_message=repr(e))
             except Exception as e:
-                self.log.exception(f"Exception occurred during the evaluation of {exp.algorithm.name} on the dataset {exp.dataset}.")
+                self.log.exception(
+                    f"Exception occurred during the evaluation of {exp.algorithm.name} on the dataset {exp.dataset}.")
                 result = {m: np.nan for m in self.metric_names}
-                self._record_results(exp, result=result, status=Status.ERROR, error_message=repr(e))
+                self._record_results(
+                    exp, result=result, status=Status.ERROR, error_message=repr(e))
 
     def _record_results(self,
                         exp: Experiment,
@@ -384,7 +398,8 @@ class TimeEval:
 
             return tuple(np.nan for _ in result_keys) + (status, error_message)
 
-        self.results[keys] = self.results["future_result"].apply(get_future_result).tolist()
+        self.results[keys] = self.results["future_result"].apply(
+            get_future_result).tolist()
         self.results = self.results.drop(['future_result'], axis=1)
 
     def get_results(self, aggregated: bool = True, short: bool = True) -> pd.DataFrame:
@@ -428,16 +443,20 @@ class TimeEval:
             group_names = ["algorithm", "collection", "dataset"]
         else:
             time_names = Times.result_keys()
-            group_names = ["algorithm", "collection", "dataset", "hyper_params_id"]
-        keys = [key for key in self.metric_names + time_names if key in df.columns]
+            group_names = ["algorithm", "collection",
+                           "dataset", "hyper_params_id"]
+        keys = [key for key in self.metric_names +
+                time_names if key in df.columns]
         grouped_results = df.groupby(group_names)
         results: pd.DataFrame = grouped_results[keys].mean()
 
         if short:
-            results = results.rename(columns=dict([(k, f"{k}_mean") for k in keys]))
+            results = results.rename(columns=dict(
+                [(k, f"{k}_mean") for k in keys]))
         else:
             std_results = grouped_results.std()[keys]
-            results = results.join(std_results, lsuffix="_mean", rsuffix="_std")
+            results = results.join(
+                std_results, lsuffix="_mean", rsuffix="_std")
         results["repetitions"] = grouped_results["repetition"].count()
         return results
 
@@ -483,7 +502,8 @@ class TimeEval:
             socket.gethostbyname("localhost")
         ]
         jobs = [
-            delayed(subprocess.call)(["rsync", "-a", f"{host}:{results_path}/", f"{results_path}"])
+            delayed(subprocess.call)(
+                ["rsync", "-a", f"{host}:{results_path}/", f"{results_path}"])
             for host in hosts
             if host not in excluded_aliases
         ]
@@ -535,7 +555,8 @@ class TimeEval:
 
         dir_list = [exp.results_path for exp in self.exps]
         tasks.append((mkdirs, [dir_list], {}))
-        self.log.debug(f"Collected {len(dir_list)} directories to create on remote nodes")
+        self.log.debug(
+            f"Collected {len(dir_list)} directories to create on remote nodes")
         self.remote.run_on_all_hosts(tasks, msg="Preparing")
 
     def _distributed_finalize(self) -> None:
@@ -552,7 +573,7 @@ class TimeEval:
         self.log.info("Syncing results")
         self.rsync_results()
 
-    def run(self) -> None:
+    def run(self) -> Path:
         """Starts the configured evaluation run.
 
         Each TimeEval run consists of a number of experiments that are executed independently of each other.
@@ -600,3 +621,4 @@ class TimeEval:
         """
         print(msg)
         self.log.info(msg)
+        return self.results_path

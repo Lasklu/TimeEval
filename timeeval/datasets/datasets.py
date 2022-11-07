@@ -174,7 +174,9 @@ class Datasets(abc.ABC):
         dataset_names : List[Tuple[str,str]]
             A list of dataset identifiers (tuple of collection name and dataset name).
         """
-        print(algorithm_type)
+        if algorithm_type is None:
+            raise ValueError(
+                "The algorithm_type parameter is required for custom datasets.")
         custom_datasets = self._custom_datasets.select(collection, dataset, dataset_type, algorithm_type, datetime_index,
                                                        training_type, train_is_normal, input_dimensionality,
                                                        min_anomalies, max_anomalies, max_contamination)
@@ -316,25 +318,26 @@ class Datasets(abc.ABC):
             entry = self._df.loc[index]
             training_type = self.get_training_type(index)
             period = None
-            try:
-                period = entry["period_size"]
-            except KeyError:
-                pass
+            # try:
+            #    period = entry["period_size"]
+            # except KeyError:
+            #    pass
 
             dataset = Dataset.get_class(entry["algorithm_type"])
             return dataset(
                 datasetId=index,
-                dataset_type=entry["dataset_type"],
+                dataset_type=entry.get("dataset_type"),
                 training_type=training_type,
-                algorithm_type=entry["algorithm_type"],
-                length=entry["length"],
-                dimensions=entry["dimensions"],
-                contamination=entry["contamination"],
-                num_anomalies=entry["num_anomalies"],
-                min_anomaly_length=entry["min_anomaly_length"],
-                median_anomaly_length=entry["median_anomaly_length"],
-                max_anomaly_length=entry["max_anomaly_length"],
-                period_size=period
+                algorithm_type=entry.get("algorithm_type"),
+                length=entry.get("length"),
+                dimensions=entry.get("dimensions"),
+                contamination=entry.get("contamination"),
+                num_anomalies=entry.get("num_anomalies"),
+                min_anomaly_length=entry.get("min_anomaly_length"),
+                median_anomaly_length=entry.get("median_anomaly_length"),
+                max_anomaly_length=entry.get("max_anomaly_length"),
+                # period_size=period
+                period_size=entry.get("period")
             )
 
     def get_dataset_path(self, dataset_id: DatasetId, train: bool = False) -> Path:
@@ -381,7 +384,7 @@ class Datasets(abc.ABC):
                 return pd.read_csv(path)
         else:
             df = pd.read_csv(path, parse_dates=[
-                             "timestamp"], infer_datetime_format=True)
+                "timestamp"], infer_datetime_format=True)
             # timestamp parsing failed, hopefully because we have an integer-timestamp
             if df["timestamp"].dtype == np.dtype("O"):
                 try:

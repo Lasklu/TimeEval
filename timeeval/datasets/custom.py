@@ -79,9 +79,7 @@ class CustomDatasets(CustomDatasetsBase):
                max_contamination: Optional[float] = None
                ) -> List[DatasetId]:
         # filter for classification and anomaly detection datasets and then apply selection
-        if algorithm_type is None:
-            raise ValueError(
-                "The algorithm_type parameter is required for custom datasets.")
+
         if (collection is not None and collection not in self.get_collection_names()) or (
                 dataset is not None and dataset not in self.get_dataset_names()):
             return []

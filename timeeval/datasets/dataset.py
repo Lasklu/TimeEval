@@ -69,16 +69,19 @@ class Dataset:
             raise ValueError(f"Unknown algorithm type {algorithm_type}!")
 
 
-@dataclass
+# @dataclass
 class AnomalyDetectionDataset(Dataset):
-    length: int
-    dimensions: int
-    contamination: float
-    min_anomaly_length: int
-    median_anomaly_length: int
-    max_anomaly_length: int
-    period_size: Optional[int] = None
-    num_anomalies: Optional[int] = None
+    def __init__(self, datasetId: DatasetId, dataset_type: str, training_type: TrainingType, **kwargs):
+        super().__init__(datasetId, dataset_type,
+                         training_type, AlgorithmType.ANOMALY_DETECTION)
+        self.dimensions = kwargs["dimensions"]
+        self.length = kwargs["length"]
+        self.contamination = kwargs["contamination"]
+        self.num_anomalies = kwargs["num_anomalies"]
+        self.min_anomaly_length = kwargs["min_anomaly_length"]
+        self.median_anomaly_length = kwargs["median_anomaly_length"]
+        self.max_anomaly_length = kwargs["max_anomaly_length"]
+        self.period_size = kwargs["period_size"]
 
     def get_dataset(self, path: Path) -> pd.DataFrame:
         return pd.read_csv(path, parse_dates=["timestamp"], infer_datetime_format=True)
@@ -95,8 +98,11 @@ class AnomalyDetectionDataset(Dataset):
         return labels
 
 
-@dataclass
 class ClassificationDataset(Dataset):
+    def __init__(self, datasetId: DatasetId, dataset_type: str, training_type: TrainingType, **kwargs):
+        super().__init__(datasetId, dataset_type,
+                         training_type, AlgorithmType.CLASSIFICATION)
+
     def get_dataset(self, path: Path) -> pd.DataFrame:
         return load_from_tsfile_to_dataframe(path, return_separate_X_and_y=False)
 

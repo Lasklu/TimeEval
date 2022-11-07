@@ -3,7 +3,7 @@
         "test_path": "./ArrowHead_TEST.ts",
         "train_path": "./ArrowHead_TRAIN.ts",
         "type": "synthetic test",
-        "algorithm_type": "anomaly_detection",
+        "algorithm_type": "classification",
         "period": 10
     }
 }
