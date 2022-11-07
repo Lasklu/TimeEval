@@ -5,7 +5,7 @@ from enum import Enum
 from functools import reduce
 from json import JSONEncoder
 from typing import Tuple, List, Optional, Dict, Any
-from timeeval import AnalysisTask
+from ..data_types import AlgorithmType
 import numpy as np
 
 
@@ -62,7 +62,7 @@ class DatasetMetadata:
     is_train: bool
     length: int
     dimensions: int
-    algorithm_type: AnalysisTask
+    algorithm_type: AlgorithmType
     contamination: float
     num_anomalies: int
     anomaly_length: AnomalyLength

@@ -12,7 +12,7 @@ from statsmodels.tsa.stattools import adfuller, kpss
 
 from .metadata import DatasetId, DatasetMetadata, AnomalyLength, Stationarity, Trend, TrendType, DatasetMetadataEncoder
 from ..utils import datasets as datasets_utils
-from timeeval import AnalysisTask
+from timeeval import AlgorithmType
 
 
 class DatasetAnalyzer:
@@ -63,7 +63,7 @@ class DatasetAnalyzer:
     """
 
     def __init__(self, dataset_id: DatasetId, is_train: bool,
-                 algorithm_type: AnalysisTask,
+                 algorithm_type: AlgorithmType,
                  df: Optional[pd.DataFrame] = None,
                  dataset_path: Optional[Path] = None,
                  dmgr: Optional['Datasets'] = None,  # type: ignore
@@ -80,7 +80,7 @@ class DatasetAnalyzer:
         self._df: pd.DataFrame = df
         self.dataset_id: DatasetId = dataset_id
         self.is_train: bool = is_train
-        self.algorithm_type: AnalysisTask = algorithm_type
+        self.algorithm_type: AlgorithmType = algorithm_type
         self._log_prefix = f"[{self.dataset_id} ({'train' if self.is_train else 'test'})]"
         self._find_base_metadata()
         if ignore_stationarity:

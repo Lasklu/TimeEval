@@ -13,7 +13,7 @@ from timeeval.metrics.classification_metrics import ClassificationMetric
 from ..algorithm import Algorithm
 from ..constants import EXECUTION_LOG, ANOMALY_SCORES_TS, METRICS_CSV, HYPER_PARAMETERS
 from ..core.times import Times
-from ..data_types import AlgorithmParameter, AnalysisTask, TrainingType, InputDimensionality
+from ..data_types import AlgorithmParameter, AlgorithmType, TrainingType, InputDimensionality
 from ..datasets import Datasets, Dataset
 from ..heuristics import inject_heuristic_values
 from ..metrics import Metric, DefaultMetrics
@@ -93,7 +93,6 @@ class Experiment:
 
         # perform execution
         y_scores, execution_times = self._perform_execution()
-        print(y_scores)
         result.update(execution_times)
         # backup results to disk
         pd.DataFrame([result]).to_csv(
@@ -101,7 +100,7 @@ class Experiment:
 
         y_true = self.dataset.get_labels(
             self.resolved_test_dataset_path)
-        if self.algorithm.analysis_task == "anomaly_detection":
+        if self.algorithm.algorithm_type == "anomaly_detection":
             y_true, y_scores = self.scale_scores(y_true, y_scores)
         # persist scores to disk
         y_scores.tofile(str(self.results_path / ANOMALY_SCORES_TS), sep="\n")
@@ -116,7 +115,7 @@ class Experiment:
             for metric in self.metrics:
                 print(f"Calculating {metric}", file=logs_file)
                 try:
-                    # if isinstance(metric, ClassificationMetric) & self.algorithm.analysis_task != "classification":
+                    # if isinstance(metric, ClassificationMetric) & self.algorithm.algorithm_type != "classification":
                     #    raise ValueError(
                     #        f"Metric {metric} is not applicable to algorithm {self.algorithm.name}")
                     score = metric(y_true, y_scores)
@@ -165,7 +164,7 @@ class Experiment:
         if self.algorithm.data_as_file:
             X: AlgorithmParameter = self.resolved_test_dataset_path
         else:
-            if isinstance(dataset, ClassificationDataset):
+            if isinstance(self.dataset, ClassificationDataset):
                 raise ValueError(
                     "ClassificationDatasets can only be used when providing data as file.")
             dataset = self.dataset.get_dataset(
@@ -182,7 +181,6 @@ class Experiment:
                 f"Performing execution for {self.algorithm.training_type.name} algorithm {self.algorithm.name}")
             y_scores, times = Times.from_execute_algorithm(
                 self.algorithm, X, self.build_args())
-        print("y_scores", y_scores)
         return y_scores, times.to_dict()
 
 

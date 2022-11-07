@@ -13,6 +13,7 @@ class AucMetric(Metric, ABC):
     All AUC-Metrics support continuous scorings, calculate the area under a curve function, and allow plotting this
     curve function. See the subclasses' documentation for a detailed explanation of the corresponding curve and metric.
     """
+
     def __init__(self, plot: bool = False, plot_store: bool = False) -> None:
         self._plot = plot
         self._plot_store = plot_store
@@ -54,6 +55,7 @@ class RocAUC(AucMetric):
     --------
     `https://en.wikipedia.org/wiki/Receiver_operating_characteristic <https://en.wikipedia.org/wiki/Receiver_operating_characteristic>`_ : Explanation of the ROC-curve.
     """
+
     def __init__(self, plot: bool = False, plot_store: bool = False) -> None:
         super().__init__(plot, plot_store)
 
@@ -76,6 +78,7 @@ class PrAUC(AucMetric):
         If this parameter is ``True`` the curve plot will be saved in the current working directory under the name
         template "fig-{metric-name}.pdf".
     """
+
     def __init__(self, plot: bool = False, plot_store: bool = False) -> None:
         super().__init__(plot, plot_store)
 
