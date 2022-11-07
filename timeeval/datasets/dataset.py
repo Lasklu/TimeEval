@@ -1,12 +1,13 @@
-from dataclasses import dataclass
-from typing import Optional
 from abc import ABC, abstractmethod
-import pandas as pd
-import numpy as np
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
+
+import numpy as np
+import pandas as pd
 from sktime.datasets import load_from_tsfile, load_from_tsfile_to_dataframe
 
-from ..data_types import AnalysisTask, TrainingType, InputDimensionality
+from ..data_types import AnalysisTask, InputDimensionality, TrainingType
 from .metadata import DatasetId
 
 
@@ -16,6 +17,7 @@ class Dataset:
 
     This class is used within TimeEval heuristics to determine the heuristic values based on the dataset properties.
     """
+
     datasetId: DatasetId
     dataset_type: str
     training_type: TrainingType
@@ -83,7 +85,8 @@ class AnomalyDetectionDataset(Dataset):
 
     def get_labels(self, path: Path) -> np.ndarray:
         labels: np.ndarray = pd.read_csv(path, usecols=["is_anomaly"])[
-            "is_anomaly"].values.astype(np.float64)
+            "is_anomaly"
+        ].values.astype(np.float64)
         return labels
 
 
@@ -93,5 +96,7 @@ class ClassificationDataset(Dataset):
         return load_from_tsfile_to_dataframe(path, return_separate_X_and_y=False)
 
     def get_labels(self, path: Path) -> np.ndarray:
-        _, labels = load_from_tsfile(path, return_data_type="numpy2d")
+        _, labels = load_from_tsfile_to_dataframe(path)
+        if labels.dtype.type == np.str_:
+            return pd.factorize(labels, sort=True)[0].astype(np.float64)
         return labels.astype(np.float64)
