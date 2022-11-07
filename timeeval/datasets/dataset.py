@@ -7,11 +7,7 @@ import numpy as np
 import pandas as pd
 from sktime.datasets import load_from_tsfile, load_from_tsfile_to_dataframe
 
-<<<<<<< HEAD
-from ..data_types import AnalysisTask, InputDimensionality, TrainingType
-=======
 from ..data_types import AlgorithmType, TrainingType, InputDimensionality
->>>>>>> 4977d544cc6e2a0d3a1418042526390d4f6adeb3
 from .metadata import DatasetId
 
 
