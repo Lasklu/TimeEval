@@ -122,7 +122,7 @@ class CustomDatasets(CustomDatasetsBase):
             for d in self._dataset_store:
                 if dataset is not None and dataset != d:
                     continue
-                metadata = self._dataset_store[d].dataset  # todo fix this
+                metadata = self._dataset_store[d].dataset
                 #_, _, metadata = self._dataset_store[d]
                 if np.all([fn(metadata) for fn in selectors]):
                     custom_datasets.append(d)

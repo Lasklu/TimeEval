@@ -5,6 +5,13 @@
         "algorithm_type": "anomaly_detection",
         "period": 10
     },
+    "dataset.2": {
+        "test_path": "./dataset.test.csv",
+        "train_path": "./dataset.train.csv",
+        "type": "synthetic test",
+        "algorithm_type": "classification",
+        "period": 10
+    },
     "dataset.1.train": {
         "test_path": "./dataset.test.csv",
         "train_path": "./dataset.train.csv",

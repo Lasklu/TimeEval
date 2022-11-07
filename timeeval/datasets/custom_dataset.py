@@ -59,11 +59,20 @@ class CustomDataset(ABC):
 
         return self.dataset_object.test_path
 
+    def _training_type(self, train_path: Optional[Path]) -> TrainingType:
+        if train_path is None:
+            return TrainingType.UNSUPERVISED
+        else:
+            labels = pd.read_csv(train_path).iloc[:, -1]
+            if np.any(labels):
+                return TrainingType.SUPERVISED
+            else:
+                return TrainingType.SEMI_SUPERVISED
+
     @staticmethod
     def get_class(algorithm_type):
-        if algorithm_type == 'classification':
-            # TODO need to change this to CustomClassificationDataset
-            return ClassificationDataset
+        if algorithm_type == 'classification' or algorithm_type == AlgorithmType.CLASSIFICATION:
+            return CustomClassificationDataset
         else:
             return CustomDetectionDataset
 
@@ -120,15 +129,50 @@ class CustomDetectionDataset(CustomDataset):
         self.train_path = train_path
         # return CDEntry(test_path, train_path, )
 
-    def _training_type(self, train_path: Optional[Path]) -> TrainingType:
-        if train_path is None:
-            return TrainingType.UNSUPERVISED
-        else:
-            labels = pd.read_csv(train_path).iloc[:, -1]
-            if np.any(labels):
-                return TrainingType.SUPERVISED
-            else:
-                return TrainingType.SEMI_SUPERVISED
 
+class CustomClassificationDataset(CustomDataset):
+    def __init__(self, name: str, dataset_object: dict, root_path: Path) -> None:
+        super().__init__(name, dataset_object, root_path)
 
-# class CustomClassificationDataset()
+    def _validate_dataset(self) -> None:
+        if TEST_PATH_KEY not in self.dataset_object:
+            raise ValueError(
+                f"The dataset {self.name} misses the required '{TEST_PATH_KEY}' property.")
+        elif not self._extract_path(self.dataset_object, TEST_PATH_KEY).exists():
+            raise ValueError(
+                f"The test file for dataset {self.name} was not found (property '{TEST_PATH_KEY}')!")
+        if TRAIN_PATH_KEY not in self.dataset_object:
+            raise ValueError(
+                f"The dataset {self.name} misses the required '{TRAIN_PATH_KEY}' property.")
+        elif not self._extract_path(self.dataset_object, TRAIN_PATH_KEY).exists():
+            raise ValueError(
+                f"The train file for dataset {self.name} was not found (property '{TRAIN_PATH_KEY}')!")
+
+    def _analyze_dataset(self) -> CDEntry:
+        dataset_id = self._dataset_id(self.name)
+        dataset_type = self.dataset_object.get(TYPE_KEY, "unknown")
+        #period = self.dataset_object.get(PERIOD_KEY, None)
+
+        test_path = self._extract_path(self.dataset_object, TEST_PATH_KEY)
+        train_path = self._extract_path(self.dataset_object, TRAIN_PATH_KEY)
+        if TRAIN_PATH_KEY not in self.dataset_object:
+            raise ValueError(
+                "Custom classification dataset must have a train path")
+
+            # get training type by inspecting training file
+        training_type = TrainingType.SUPERVISED  # has always to be supervised
+
+        # analyze test time series
+        # dm = DatasetAnalyzer(dataset_id, is_train=False, algorithm_type=AlgorithmType.ANOMALY_DETECTION,
+        #                     dataset_path=test_path)
+        dataset = ClassificationDataset
+        self.dataset = dataset(
+            datasetId=dataset_id,
+            dataset_type=dataset_type,
+            training_type=training_type,
+            algorithm_type=AlgorithmType.CLASSIFICATION
+            # period_size=period
+        )
+        self.test_path = test_path
+        self.train_path = train_path
+        # return CDEntry(test_path, train_path, )

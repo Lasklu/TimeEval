@@ -3,11 +3,18 @@ from timeeval import TimeEval, DatasetManager, Algorithm, TrainingType, InputDim
 from timeeval.adapters import DockerAdapter
 from timeeval.metrics.classification_metrics import F1Score, Precision, Recall
 from timeeval.params import FixedParameters
-
+from pathlib import Path
+# dm = DatasetManager(
+#    "./timeeval_experiments/classification/")
+#datasets = dm.select()
+custom_datasets_path = Path(
+    "/Users/lukaslaskowski/Documents/HPI/9.Semester/Masterprojekt/src/cast/TimeEval/timeeval_experiments/classification/datasets_class.json")
 dm = DatasetManager(
-    "./timeeval_experiments/classification/")
-datasets = dm.select()
-
+    'timeeval_experiments/detection', custom_datasets_file=custom_datasets_path)
+# return
+# dm = DatasetManager(Path("tests/example_data"))  # or test-cases directory
+datasets = dm.select(algorithm_type=AlgorithmType.CLASSIFICATION)
+print(datasets)
 algorithms = [
     Algorithm(
         name="Rocket",
