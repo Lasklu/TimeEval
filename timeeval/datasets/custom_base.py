@@ -4,7 +4,8 @@ from typing import List, Optional
 
 from .dataset import Dataset
 from .metadata import DatasetId
-from ..data_types import TrainingType, InputDimensionality
+from ..data_types import TrainingType, InputDimensionality, AlgorithmType
+#from ..timeeval import TimeEval, DatasetManager, DefaultMetrics, Algorithm, TrainingType, InputDimensionality, AlgorithmType
 
 
 class CustomDatasetsBase(abc.ABC):
@@ -21,19 +22,21 @@ class CustomDatasetsBase(abc.ABC):
     def get_dataset_names(self) -> List[str]:
         ...
 
-    @abc.abstractmethod
-    def get_path(self, dataset_name: str, train: bool) -> Path:
-        ...
+    # @abc.abstractmethod
+    # def get_path(self, dataset_name: str, train: bool) -> Path:
 
-    @abc.abstractmethod
-    def get(self, dataset_name: str) -> Dataset:
-        ...
+#        ...
+
+ #   @abc.abstractmethod
+#    def get(self, dataset_name: str) -> Dataset:
+  #      ...
 
     @abc.abstractmethod
     def select(self,
                collection: Optional[str] = None,
                dataset: Optional[str] = None,
                dataset_type: Optional[str] = None,
+               algorithm_type: Optional[AlgorithmType] = None,
                datetime_index: Optional[bool] = None,
                training_type: Optional[TrainingType] = None,
                train_is_normal: Optional[bool] = None,

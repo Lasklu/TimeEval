@@ -20,14 +20,6 @@ class Dataset:
     dataset_type: str
     training_type: TrainingType
     algorithm_type: AlgorithmType
-    length: int
-    dimensions: int
-    contamination: float
-    min_anomaly_length: int
-    median_anomaly_length: int
-    max_anomaly_length: int
-    period_size: Optional[int] = None
-    num_anomalies: Optional[int] = None
 
     @property
     def name(self) -> str:
@@ -63,9 +55,9 @@ class Dataset:
 
     @staticmethod
     def get_class(algorithm_type):
-        if algorithm_type == "classification":
+        if algorithm_type == "classification" or algorithm_type == AlgorithmType.CLASSIFICATION:
             return ClassificationDataset
-        elif algorithm_type == "anomaly_detection":
+        elif algorithm_type == "anomaly_detection" or algorithm_type == AlgorithmType.ANOMALY_DETECTION:
             return AnomalyDetectionDataset
         else:
             raise ValueError(f"Unknown algorithm type {algorithm_type}!")
@@ -73,6 +65,15 @@ class Dataset:
 
 @dataclass
 class AnomalyDetectionDataset(Dataset):
+    length: int
+    dimensions: int
+    contamination: float
+    min_anomaly_length: int
+    median_anomaly_length: int
+    max_anomaly_length: int
+    period_size: Optional[int] = None
+    num_anomalies: Optional[int] = None
+
     def get_dataset(self, path: Path) -> pd.DataFrame:
         return pd.read_csv(path, parse_dates=["timestamp"], infer_datetime_format=True)
 

@@ -174,7 +174,8 @@ class Datasets(abc.ABC):
         dataset_names : List[Tuple[str,str]]
             A list of dataset identifiers (tuple of collection name and dataset name).
         """
-        custom_datasets = self._custom_datasets.select(collection, dataset, dataset_type, datetime_index,
+        print(algorithm_type)
+        custom_datasets = self._custom_datasets.select(collection, dataset, dataset_type, algorithm_type, datetime_index,
                                                        training_type, train_is_normal, input_dimensionality,
                                                        min_anomalies, max_anomalies, max_contamination)
 

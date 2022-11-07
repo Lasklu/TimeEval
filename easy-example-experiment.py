@@ -6,6 +6,7 @@ from timeeval.adapters import DockerAdapter, FunctionAdapter
 from timeeval.params import FixedParameters
 from timeeval.data_types import AlgorithmParameter
 import numpy as np
+from timeeval.constants import HPI_CLUSTER
 
 
 def your_algorithm_function(data: AlgorithmParameter, args: dict) -> np.ndarray:
@@ -16,8 +17,13 @@ def your_algorithm_function(data: AlgorithmParameter, args: dict) -> np.ndarray:
 
 
 def main():
-    dm = DatasetManager(Path("tests/example_data"))  # or test-cases directory
-    datasets = dm.select()
+    custom_datasets_path = Path(
+        "/Users/lukaslaskowski/Documents/HPI/9.Semester/Masterprojekt/src/cast/TimeEval/tests/example_data/datasets.json")
+    dm = DatasetManager(
+        'timeeval_experiments/detection', custom_datasets_file=custom_datasets_path)
+    # return
+    # dm = DatasetManager(Path("tests/example_data"))  # or test-cases directory
+    datasets = dm.select(algorithm_type=AlgorithmType.ANOMALY_DETECTION)
 
     algorithms = [
         Algorithm(
@@ -33,11 +39,6 @@ def main():
             algorithm_type=AlgorithmType.ANOMALY_DETECTION,
             input_dimensionality=InputDimensionality("multivariate")
         ),
-        Algorithm(
-            name="MyPythonFunctionAlgorithm",
-            main=FunctionAdapter(your_algorithm_function),
-            data_as_file=False
-        )
     ]
 
     timeeval = TimeEval(dm, datasets, algorithms,
@@ -45,7 +46,7 @@ def main():
 
     timeeval.run()
     results = timeeval.get_results(aggregated=False)
-    #print(results)
+    # print(results)
 
 
 if __name__ == "__main__":
