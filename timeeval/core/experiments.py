@@ -100,7 +100,8 @@ class Experiment:
 
         y_true = self.dataset.get_labels(
             self.resolved_test_dataset_path)
-        if self.algorithm.algorithm_type == "anomaly_detection":
+        if self.algorithm.algorithm_type == "anomaly_detection" or self.algorithm.algorithm_type == AlgorithmType.ANOMALY_DETECTION:
+            print(self.algorithm.algorithm_type)
             y_true, y_scores = self.scale_scores(y_true, y_scores)
         # persist scores to disk
         y_scores.tofile(str(self.results_path / ANOMALY_SCORES_TS), sep="\n")
